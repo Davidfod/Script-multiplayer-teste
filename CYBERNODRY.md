@@ -41,11 +41,11 @@ GameFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 GameFrame.ClipsDescendants = true
 Instance.new("UICorner", GameFrame)
 
--- CONTADOR ONLINE
+-- CONTADOR ONLINE CORRIGIDO
 local OnlineLabel = Instance.new("TextLabel", GameFrame)
 OnlineLabel.Size = UDim2.new(1, 0, 0, 30)
 OnlineLabel.Position = UDim2.new(0, 0, 0, 55)
-OnlineLabel.Text = "MEMBROS ONLINE: 1"
+OnlineLabel.Text = "MEMBROS USANDO: 1"
 OnlineLabel.TextColor3 = Color3.new(0, 1, 0)
 OnlineLabel.Font = Enum.Font.GothamBold
 OnlineLabel.BackgroundTransparency = 1
@@ -128,10 +128,21 @@ JumpBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 JumpBtn.TextColor3 = Color3.new(1,1,1)
 Instance.new("UICorner", JumpBtn)
 
--- LÓGICA DE FÍSICA E TECLAS
+-- LÓGICA DE FÍSICA E SYNC
 local remotePlayers = {}
 RunService.RenderStepped:Connect(function()
+    -- CONTADOR ONLINE REAL (Verifica quem está com a GUI ativa)
+    local count = 0
+    for _, p in pairs(game.Players:GetPlayers()) do
+        local gui = p:FindFirstChild("PlayerGui")
+        if gui and gui:FindFirstChild("CyberNet_Fixed_V11") then
+            count = count + 1
+        end
+    end
+    OnlineLabel.Text = "MEMBROS USANDO: " .. count
     player:SetAttribute("CyberOnline", true)
+
+    -- Movimentação
     local d = 0
     if UserInputService:IsKeyDown(Enum.KeyCode.D) or UserInputService:IsKeyDown(Enum.KeyCode.W) or moveR then d = 1 
     elseif UserInputService:IsKeyDown(Enum.KeyCode.A) or UserInputService:IsKeyDown(Enum.KeyCode.S) or moveL then d = -1 end
@@ -140,6 +151,7 @@ RunService.RenderStepped:Connect(function()
     velY = velY + gravity
     myBall.Position = myBall.Position + UDim2.new(0, 0, 0, velY)
 
+    -- Colisão
     for _, plat in pairs(platforms) do
         local bX, bY = myBall.Position.X.Offset, myBall.Position.Y.Offset
         local pX, pY, pW = plat.Position.X.Offset, plat.Position.Y.Offset, plat.Size.X.Offset
@@ -161,6 +173,7 @@ RunService.RenderStepped:Connect(function()
         velY = 0
     end
     
+    -- MULTIPLAYER SYNC AUTOMÁTICO
     if MultiplayerAtivo then
         player:SetAttribute("CyberPos", SalaAtual .. "|" .. myBall.Position.X.Offset .. "|" .. myBall.Position.Y.Offset)
         for _, p in pairs(game.Players:GetPlayers()) do
@@ -172,11 +185,14 @@ RunService.RenderStepped:Connect(function()
                         if not remotePlayers[p.Name] then
                             local b = Instance.new("Frame", GameFrame)
                             b.Size = UDim2.new(0, 25, 0, 25)
-                            b.BackgroundColor3 = Color3.new(1,0,0)
+                            b.BackgroundColor3 = Color3.new(1,0,0) -- Bola dos outros
                             Instance.new("UICorner", b).CornerRadius = UDim.new(1,0)
                             remotePlayers[p.Name] = b
                         end
                         remotePlayers[p.Name].Position = UDim2.new(0, tonumber(s[2]), 0, tonumber(s[3]))
+                        remotePlayers[p.Name].Visible = true
+                    else
+                        if remotePlayers[p.Name] then remotePlayers[p.Name].Visible = false end
                     end
                 end
             end
@@ -188,7 +204,7 @@ local function jump() if velY == 0 then velY = -15 end end
 JumpBtn.MouseButton1Click:Connect(jump)
 UserInputService.InputBegan:Connect(function(i, g) if not g and i.KeyCode == Enum.KeyCode.Space then jump() end end)
 
--- SISTEMA DE SALAS (ABRIR E FECHAR TEXTBOX)
+-- BOTÕES DE SALA
 CreateBtn.MouseButton1Click:Connect(function()
     SalaAtual = tostring(math.random(1000,9999))
     CodigoTxt.Text = "SALA: "..SalaAtual
@@ -213,7 +229,7 @@ JoinBtn.MouseButton1Click:Connect(function()
             if enter then
                 SalaAtual = currentInput.Text
                 CodigoTxt.Text = "SALA: "..SalaAtual
-                MultiplayerAtivo = true
+                MultiplayerAtivo = true -- ATIVA O MULTIPLAYER NA HORA
                 currentInput:Destroy()
                 currentInput = nil
             end
@@ -226,7 +242,7 @@ Exit.Size = UDim2.new(0, 30, 0, 30)
 Exit.Position = UDim2.new(1, -35, 0, 55)
 Exit.Text = "X"
 Exit.BackgroundColor3 = Color3.new(1,0,0)
-Exit.MouseButton1Click:Connect(function() setLock(false); player:SetAttribute("CyberOnline", false); sg:Destroy() end)
+Exit.MouseButton1Click:Connect(function() setLock(false); sg:Destroy() end)
 
 local Hide = Instance.new("TextButton", sg)
 Hide.Size = UDim2.new(0, 30, 0, 30)
